@@ -35,3 +35,16 @@ partial struct A
 {
 
 }
+
+
+partial struct Containing
+{
+    partial struct Inner
+    {
+        [StaticStateMachine]
+        partial struct B
+        {
+
+        }
+    }
+}

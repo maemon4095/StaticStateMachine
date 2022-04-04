@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StaticStateMachine.Test", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StaticStateMachine", "StaticStateMachine\StaticStateMachine.csproj", "{F16458AA-C4B8-4C0C-AB4E-FEFED276B082}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticStateMachine.Benchmark", "StaticStateMachine.Benchmark\StaticStateMachine.Benchmark.csproj", "{69785ADD-7A9F-4596-99A7-2040B67FC507}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{F16458AA-C4B8-4C0C-AB4E-FEFED276B082}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F16458AA-C4B8-4C0C-AB4E-FEFED276B082}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F16458AA-C4B8-4C0C-AB4E-FEFED276B082}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69785ADD-7A9F-4596-99A7-2040B67FC507}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69785ADD-7A9F-4596-99A7-2040B67FC507}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69785ADD-7A9F-4596-99A7-2040B67FC507}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69785ADD-7A9F-4596-99A7-2040B67FC507}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

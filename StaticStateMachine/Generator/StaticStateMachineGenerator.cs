@@ -7,7 +7,7 @@ using IncrementalSourceGeneratorSupplement;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Runtime.InteropServices;
-
+using System.Linq;
 namespace StaticStateMachine.Generator;
 
 [Generator]
@@ -76,14 +76,14 @@ namespace StaticStateMachine.Generator
     {
         public StaticStateMachineAttribute() : this(null, null)
         { }
-        public StaticStateMachineAttribute(Type? argument, Type? associated)
+        public StaticStateMachineAttribute(Type argument, Type associated)
         {
             this.ArgumentType = argument;
             this.AssociatedType = associated;
         }
 
-        public Type? ArgumentType { get; }
-        public Type? AssociatedType { get; }
+        public Type ArgumentType { get; }
+        public Type AssociatedType { get; }
     }
 
     [AttributeUsage(global::System.AttributeTargets.Class | global::System.AttributeTargets.Struct, AllowMultiple = true)]
@@ -164,10 +164,10 @@ namespace StaticStateMachine
         var writer = new IndentedWriter("    ");
         GenerateSource(writer, new()
         {
+            Symbol = (symbol as ITypeSymbol)!,
             ArgType = argTypeFullName,
             AssociatedType = associatedTypeFullName,
-            TypeCategory = (symbol as ITypeSymbol)!.IsReferenceType ? "class" : "struct",
-            TypeIdentifier = symbol.ToDisplayString(new SymbolDisplayFormat(genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters)),
+            TypeDecl = symbol.ToDisplayString(FormatTypeDecl),
             ContainingNamespace = symbol.ContainingNamespace.IsGlobalNamespace ? null : symbol.ContainingNamespace.ToDisplayString(FormatFullName),
             InheritedInterface = $"global::StaticStateMachine.IResettableStateMachine<{argTypeFullName}, {associatedTypeFullName}>",
             StateFullName = $"global::StaticStateMachine.MachineState<{associatedTypeFullName}>",
@@ -186,8 +186,14 @@ namespace StaticStateMachine
             writer["namespace "][context.ContainingNamespace].Line()
                   ['{'].Line().Indent(1);
         }
+        foreach(var containing in Containings(context.Symbol))
+        {
+            writer["partial "][containing.ToDisplayString(FormatTypeDecl)].Line()
+                  ['{'].Line().Indent(1);
+        }
 
-        writer["partial "][context.TypeCategory][' '][context.TypeIdentifier][" : "][context.InheritedInterface].Line()
+
+        writer["partial "][context.TypeDecl][" : "][context.InheritedInterface].Line()
               ['{'].Line().Indent(1);
 
         writer["private int _state;"].Line()
@@ -201,6 +207,11 @@ namespace StaticStateMachine
         GenerateTransition(writer, context);
 
         writer.Indent(-1)['}'].Line();
+
+        foreach (var _ in Containings(context.Symbol))
+        {
+            writer.Indent(-1)['}'].Line();
+        }
 
         if (context.ContainingNamespace is not null)
         {
@@ -383,5 +394,12 @@ namespace StaticStateMachine
                 }
             }
         }
+    }
+
+    static IEnumerable<INamedTypeSymbol> Containings(ITypeSymbol symbol)
+    {
+        if (symbol.ContainingType is null) yield break;
+        foreach(var containing in Containings(symbol.ContainingType)) yield return containing;
+        yield return symbol.ContainingType;
     }
 }
