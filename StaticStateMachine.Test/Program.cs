@@ -27,14 +27,22 @@ while (true)
 }
 #endif
 
+
+
 [StaticStateMachine]
-[Association("import", 0)]
-[Association("import static", 1)]
-[Association("output", 2)]
+[Association("import", Option.Import)]
+[Association("import static", Option.ImportStatic)]
+[Association("output", Option.Output)]
 partial struct A
 {
 
 }
+
+enum Option
+{
+    Import, ImportStatic, Output
+}
+
 
 namespace Test
 {
@@ -43,6 +51,7 @@ namespace Test
         partial struct Inner
         {
             [StaticStateMachine]
+            [Association("import", 0)]
             partial struct B
             {
 

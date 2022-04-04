@@ -186,7 +186,7 @@ namespace StaticStateMachine
             writer["namespace "][context.ContainingNamespace].Line()
                   ['{'].Line().Indent(1);
         }
-        foreach(var containing in Containings(context.Symbol))
+        foreach (var containing in Containings(context.Symbol))
         {
             writer["partial "][containing.ToDisplayString(FormatTypeDecl)].Line()
                   ['{'].Line().Indent(1);
@@ -265,9 +265,9 @@ namespace StaticStateMachine
                 switch (arg0.Kind)
                 {
                     case TypedConstantKind.Array:
-                        return (Pattern: arg0.Values.Select(v => (object)v).ToImmutableArray(), arg1.Value);
+                        return (Pattern: arg0.Values.Select(v => (object)v).ToImmutableArray(), arg1);
                     case TypedConstantKind.Primitive:
-                        if (arg0.Value is string str) return (Pattern: str.Select(c => (object)c).ToImmutableArray(), arg1.Value);
+                        if (arg0.Value is string str) return (Pattern: str.Select(c => (object)c).ToImmutableArray(), arg1);
                         return default;
                     default: return default;
                 }
@@ -279,7 +279,7 @@ namespace StaticStateMachine
             writer["default: return false;"].Line().Indent(-1)
                   ['}'].Line();
 
-            static int Body(IndentedWriter writer, IComparer<object?> comparer, int state, int freeState, int depth, ReadOnlySpan<(ImmutableArray<object> Pattern, object? Associated)> span)
+            static int Body(IndentedWriter writer, IComparer<object?> comparer, int state, int freeState, int depth, ReadOnlySpan<(ImmutableArray<object> Pattern, TypedConstant Associated)> span)
             {
                 var free = GenerateCase(writer, comparer, state, freeState, depth, span);
                 var branch = 0;
@@ -316,7 +316,7 @@ namespace StaticStateMachine
                 return free;
 
 
-                static int GenerateCase(IndentedWriter writer, IComparer<object?> comparer, int state, int freeState, int depth, ReadOnlySpan<(ImmutableArray<object> Pattern, object? Associated)> span)
+                static int GenerateCase(IndentedWriter writer, IComparer<object?> comparer, int state, int freeState, int depth, ReadOnlySpan<(ImmutableArray<object> Pattern, TypedConstant Associated)> span)
                 {
                     writer["case "][state][':'].Line().Indent(1)
                           ["switch(chara)"].Line()
@@ -354,7 +354,7 @@ namespace StaticStateMachine
                               ["this.State = new ("][terminal ? "true" : "false"].End();
                         if (match)
                         {
-                            writer[", "][associated].End();
+                            writer[", "][GetConstantLiteral(associated)].End();
                         }
                         writer[");"].Line();
                         writer["return "][terminal ? "false" : "true"][';'].Indent(-1).Line();
@@ -371,7 +371,7 @@ namespace StaticStateMachine
 
                     static string GetLiteral(object obj)
                     {
-                        if (obj is TypedConstant constant) return constant.ToCSharpString();
+                        if (obj is TypedConstant constant) return GetConstantLiteral(constant);
                         if (obj is char chara) return Escaped(chara);
                         return string.Empty;
 
@@ -391,6 +391,19 @@ namespace StaticStateMachine
                             _ => $"'{chara}'",
                         };
                     }
+                    static string GetConstantLiteral(TypedConstant constant)
+                    {
+                        switch (constant.Kind)
+                        {
+                            case TypedConstantKind.Enum:
+                                var prefix = constant.Type?.ToDisplayString(FormatGlobalFullName);
+                                var str = constant.ToCSharpString();
+                                var idx = str.LastIndexOf('.');
+                                return prefix + str.Substring(idx);
+                            default:
+                                return constant.ToCSharpString();
+                        }
+                    }
                 }
             }
         }
@@ -399,7 +412,7 @@ namespace StaticStateMachine
     static IEnumerable<INamedTypeSymbol> Containings(ITypeSymbol symbol)
     {
         if (symbol.ContainingType is null) yield break;
-        foreach(var containing in Containings(symbol.ContainingType)) yield return containing;
+        foreach (var containing in Containings(symbol.ContainingType)) yield return containing;
         yield return symbol.ContainingType;
     }
 }

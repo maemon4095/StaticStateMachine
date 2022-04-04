@@ -13,7 +13,6 @@
 		<SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
 		<IncludeSymbols>false</IncludeSymbols>
 		<DevelopmentDependency>true</DevelopmentDependency>
-		<IncludeBuildOutput>false</IncludeBuildOutput>
 	</PropertyGroup>
 
 	<!-- references -->
@@ -37,7 +36,7 @@
 	<!-- nuget -->
 	<PropertyGroup>
 		<Authors>maemon4095</Authors>
-		<Version>0.1.1</Version>
+		<Version>0.1.2</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
