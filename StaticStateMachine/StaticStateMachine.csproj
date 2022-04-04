@@ -34,8 +34,12 @@
 			<TargetPathWithTargetPlatformMoniker Include="$(PkgIncrementalSourceGeneratorSupplement)\lib\netstandard2.0\*.dll" IncludeRuntimeDependency="false" />
 		</ItemGroup>
 	</Target>
-	
+
 	<!-- nuget -->
+	<PropertyGroup>
+		<Authors>maemon4095</Authors>
+		<Version>0.0.0</Version>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<!-- create nuget package as analyzer -->
