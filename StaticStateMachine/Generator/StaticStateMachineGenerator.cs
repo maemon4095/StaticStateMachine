@@ -22,7 +22,7 @@ public partial class StaticStateMachineGenerator : IncrementalSourceGeneratorBas
     static SymbolDisplayFormat FormatTypeDecl { get; } = new SymbolDisplayFormat(
         kindOptions: SymbolDisplayKindOptions.IncludeTypeKeyword,
         genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters | SymbolDisplayGenericsOptions.IncludeVariance);
-    static SymbolDisplayFormat FormatFullName { get; } = new SymbolDisplayFormat(
+    static SymbolDisplayFormat FormatGlobalFullName { get; } = new SymbolDisplayFormat(
         globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
         typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
         genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters | SymbolDisplayGenericsOptions.IncludeVariance);
@@ -158,8 +158,8 @@ namespace StaticStateMachine
         })) ?? objectSymbol;
         associatedType ??= LowestCommonAncestorOf(associationAttributes.Select(a => a.ConstructorArguments[1].Type)) ?? objectSymbol;
 
-        var argTypeFullName = argType.ToDisplayString(FormatFullName);
-        var associatedTypeFullName = associatedType.ToDisplayString(FormatFullName);
+        var argTypeFullName = argType.ToDisplayString(FormatGlobalFullName);
+        var associatedTypeFullName = associatedType.ToDisplayString(FormatGlobalFullName);
 
         var writer = new IndentedWriter("    ");
         GenerateSource(writer, new()
@@ -168,7 +168,7 @@ namespace StaticStateMachine
             ArgType = argTypeFullName,
             AssociatedType = associatedTypeFullName,
             TypeDecl = symbol.ToDisplayString(FormatTypeDecl),
-            ContainingNamespace = symbol.ContainingNamespace.IsGlobalNamespace ? null : symbol.ContainingNamespace.ToDisplayString(FormatFullName),
+            ContainingNamespace = symbol.ContainingNamespace.IsGlobalNamespace ? null : symbol.ContainingNamespace.ToDisplayString(),
             InheritedInterface = $"global::StaticStateMachine.IResettableStateMachine<{argTypeFullName}, {associatedTypeFullName}>",
             StateFullName = $"global::StaticStateMachine.MachineState<{associatedTypeFullName}>",
             StateMachineAttributeData = stateMachineAttributeData,

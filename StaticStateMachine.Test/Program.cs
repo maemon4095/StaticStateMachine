@@ -36,15 +36,17 @@ partial struct A
 
 }
 
-
-partial struct Containing
+namespace Test
 {
-    partial struct Inner
+    partial struct Containing
     {
-        [StaticStateMachine]
-        partial struct B
+        partial struct Inner
         {
+            [StaticStateMachine]
+            partial struct B
+            {
 
+            }
         }
     }
 }
