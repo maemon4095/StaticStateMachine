@@ -30,9 +30,15 @@ while (true)
 
 
 [StaticStateMachine]
-[Association("import", Option.Import)]
-[Association("import static", Option.ImportStatic)]
-[Association("output", Option.Output)]
+[Association("/:", 0)]
+[Association(":/", 1)]
+[Association("/#", 2)]
+[Association("/$", 3)]
+[Association("$/", 4)]
+[Association("/@", 5)]
+[Association("\r", 6)]
+[Association("\r\n", 7)]
+[Association("\n", 8)]
 partial struct A
 {
 

@@ -104,11 +104,9 @@ namespace StaticStateMachine
         public bool Transition(TArg arg);
     }
 
-    public interface IResettableStateMachine<TArg, TAssociated>
+    public interface IResettableStateMachine<TArg, TAssociated> : IStateMachine<TArg, TAssociated>
     {
-        public MachineState<TAssociated> State { get; }
         public void Reset();
-        public bool Transition(TArg arg);
     }
 
     public struct MachineState<TAssociated>
@@ -236,12 +234,11 @@ namespace StaticStateMachine
                     case TypedConstantKind.Array:
                         return (Pattern: arg0.Values, arg1);
                     case TypedConstantKind.Primitive:
-                        if (arg0.Value is string str) return (Pattern: (object)str, arg1);
+                        if (arg0.Value is string str) return (Pattern: (object)str, Associated: arg1);
                         return default;
                     default: return default;
                 }
-            }).OrderBy(p => p.Pattern, Comparer<object>.Create((left, right) => SequenceCompare(left, right))).ToImmutableArray();
-
+            }).OrderBy(p => p.Pattern, Comparer<object>.Create((left, right) => SequenceCompare(left, right))).ToImmutableArray();            
             writer["switch(this._state)"].Line()
                   ['{'].Line().Indent(1);
             Body(writer, 0, 0, 0, patterns.AsSpan());
