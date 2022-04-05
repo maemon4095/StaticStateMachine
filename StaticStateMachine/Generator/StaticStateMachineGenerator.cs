@@ -234,9 +234,9 @@ namespace StaticStateMachine
                 switch (arg0.Kind)
                 {
                     case TypedConstantKind.Array:
-                        return (Pattern: (object)arg0.Values, arg1);
+                        return (Pattern: arg0.Values, arg1);
                     case TypedConstantKind.Primitive:
-                        if (arg0.Value is string str) return (Pattern: str, arg1);
+                        if (arg0.Value is string str) return (Pattern: (object)str, arg1);
                         return default;
                     default: return default;
                 }
@@ -346,13 +346,13 @@ namespace StaticStateMachine
                 {
                     case (string l, string r):
                         return string.CompareOrdinal(l, r);
-                    case (string l, ImmutableArray<TypedConstant> r):
-                        return +CompareStrArray(l, r);
-                    case (ImmutableArray<TypedConstant> l, string r):
-                        return -CompareStrArray(r, l);
-                    case (ImmutableArray<TypedConstant> l, ImmutableArray<TypedConstant> r):
+                    case (string l, IImmutableList<TypedConstant> r):
+                        return +CompareStrList(l, r);
+                    case (IImmutableList<TypedConstant> l, string r):
+                        return -CompareStrList(r, l);
+                    case (IImmutableList<TypedConstant> l, IImmutableList<TypedConstant> r):
                     {
-                        var min = Math.Min(l.Length, r.Length);
+                        var min = Math.Min(l.Count, r.Count);
                         for (var i = 0; i < min; ++i)
                         {
                             var comparison = CompareConstant(l[i], r[i]);
@@ -363,9 +363,9 @@ namespace StaticStateMachine
                     default: return 0;
                 }
 
-                static int CompareStrArray(string l, ImmutableArray<TypedConstant> r)
+                static int CompareStrList(string l, IImmutableList<TypedConstant> r)
                 {
-                    var min = Math.Min(l.Length, r.Length);
+                    var min = Math.Min(l.Length, r.Count);
                     for (var i = 0; i < min; ++i)
                     {
                         var comparison = CompareCharConstant(l[i], r[i]);
@@ -379,9 +379,9 @@ namespace StaticStateMachine
                 return (left, right) switch
                 {
                     (string l, string r) => l[index].CompareTo(r[index]),
-                    (string l, ImmutableArray<TypedConstant> r) => +CompareCharConstant(l[index], r[index]),
-                    (ImmutableArray<TypedConstant> l, string r) => -CompareCharConstant(r[index], l[index]),
-                    (ImmutableArray<TypedConstant> l, ImmutableArray<TypedConstant> r) => CompareConstant(l[index], r[index]),
+                    (string l, IImmutableList<TypedConstant> r) => +CompareCharConstant(l[index], r[index]),
+                    (IImmutableList<TypedConstant> l, string r) => -CompareCharConstant(r[index], l[index]),
+                    (IImmutableList<TypedConstant> l, IImmutableList<TypedConstant> r) => CompareConstant(l[index], r[index]),
                     _ => 0,
                 };
             }
@@ -426,7 +426,7 @@ namespace StaticStateMachine
             {
                 return obj switch
                 {
-                    ImmutableArray<TypedConstant> array => array.Length,
+                    IImmutableList<TypedConstant> list => list.Count,
                     string str => str.Length,
                     _ => -1,
                 };
@@ -435,7 +435,7 @@ namespace StaticStateMachine
             {
                 return obj switch
                 {
-                    ImmutableArray<TypedConstant> array => GetConstantLiteral(array[index]),
+                    IImmutableList<TypedConstant> list => GetConstantLiteral(list[index]),
                     string str => Escaped(str[index]),
                     _ => string.Empty,
                 };
