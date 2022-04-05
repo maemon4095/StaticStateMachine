@@ -1,13 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using IncrementalSourceGeneratorSupplement;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Immutable;
 using System.Text;
-using IncrementalSourceGeneratorSupplement;
-using System.Runtime.CompilerServices;
-using Microsoft.CodeAnalysis.CSharp;
-using System.Runtime.InteropServices;
-using System.Linq;
 namespace StaticStateMachine.Generator;
 
 [Generator]
@@ -229,34 +226,6 @@ namespace StaticStateMachine
 
         static void GenerateSwitch(IndentedWriter writer, GenerationContext context)
         {
-            var comparer = Comparer<object?>.Create((left, right) =>
-            {
-                if (left is TypedConstant cl) left = cl.Value;
-                if (right is TypedConstant cr) right = cr.Value;
-                return (left, right) switch
-                {
-                    (null, null) => 0,
-                    (null, { }) => -1,
-                    ({ }, null) => 1,
-                    (Type l, Type r) => CompareType(l, r),
-                    (string l, string r) => string.CompareOrdinal(l, r),
-                    (bool l, bool r) => l.CompareTo(r),
-                    (byte l, byte r) => l.CompareTo(r),
-                    (char l, char r) => l.CompareTo(r),
-                    (double l, double r) => l.CompareTo(r),
-                    (float l, float r) => l.CompareTo(r),
-                    (int l, int r) => l.CompareTo(r),
-                    (long l, long r) => l.CompareTo(r),
-                    (sbyte l, sbyte r) => l.CompareTo(r),
-                    (short l, short r) => l.CompareTo(r),
-                    (uint l, uint r) => l.CompareTo(r),
-                    (ulong l, ulong r) => l.CompareTo(r),
-                    (ushort l, ushort r) => l.CompareTo(r),
-                    ({ } l, { } r) => CompareType(l.GetType(), r.GetType()),
-                };
-
-                static int CompareType(Type left, Type right) => string.CompareOrdinal(left.FullName, right.FullName);
-            });
             var patterns = context.AssociationAttributes.Select(a =>
             {
                 var args = a.ConstructorArguments;
@@ -265,58 +234,57 @@ namespace StaticStateMachine
                 switch (arg0.Kind)
                 {
                     case TypedConstantKind.Array:
-                        return (Pattern: arg0.Values.Select(v => (object)v).ToImmutableArray(), arg1);
+                        return (Pattern: (object)arg0.Values, arg1);
                     case TypedConstantKind.Primitive:
-                        if (arg0.Value is string str) return (Pattern: str.Select(c => (object)c).ToImmutableArray(), arg1);
+                        if (arg0.Value is string str) return (Pattern: str, arg1);
                         return default;
                     default: return default;
                 }
-            }).OrderBy(p => p.Pattern, comparer).ToImmutableArray();
+            }).OrderBy(p => p.Pattern, Comparer<object>.Create((left, right) => SequenceCompare(left, right))).ToImmutableArray();
 
             writer["switch(this._state)"].Line()
                   ['{'].Line().Indent(1);
-            Body(writer, comparer, 0, 0, 0, patterns.AsSpan());
+            Body(writer, 0, 0, 0, patterns.AsSpan());
             writer["default: return false;"].Line().Indent(-1)
                   ['}'].Line();
 
-            static int Body(IndentedWriter writer, IComparer<object?> comparer, int state, int freeState, int depth, ReadOnlySpan<(ImmutableArray<object> Pattern, TypedConstant Associated)> span)
+            static int Body(IndentedWriter writer, int state, int freeState, int depth, ReadOnlySpan<(object Pattern, TypedConstant Associated)> span)
             {
-                var free = GenerateCase(writer, comparer, state, freeState, depth, span);
+                var free = GenerateCase(writer, state, freeState, depth, span);
                 var branch = 0;
                 var offset = 0;
                 while (offset < span.Length)
                 {
                     var (pattern, associated) = span[offset];
-                    if (pattern.Length <= depth)
+                    if (GetLength(pattern) <= depth)
                     {
                         offset++;
                         continue;
                     }
-                    var chara = pattern[depth];
                     var count = 0;
                     var matched = 0;
                     while (offset + matched + count < span.Length)
                     {
                         var (p, _) = span[offset + matched + count];
-                        if (p.Length - 1 <= depth)
+                        if (GetLength(p) - 1 <= depth)
                         {
                             matched++;
                             continue;
                         }
-                        if (comparer.Compare(chara, p[depth]) != 0) break;
+                        if (Compare(pattern, p, depth) != 0) break;
                         count++;
                     }
                     if (count > 0)
                     {
                         branch++;
-                        free = Body(writer, comparer, branch + freeState, free, depth + 1, span.Slice(offset, count + matched));
+                        free = Body(writer, branch + freeState, free, depth + 1, span.Slice(offset, count + matched));
                     }
                     offset += count + matched;
                 }
                 return free;
 
 
-                static int GenerateCase(IndentedWriter writer, IComparer<object?> comparer, int state, int freeState, int depth, ReadOnlySpan<(ImmutableArray<object> Pattern, TypedConstant Associated)> span)
+                static int GenerateCase(IndentedWriter writer, int state, int freeState, int depth, ReadOnlySpan<(object Pattern, TypedConstant Associated)> span)
                 {
                     writer["case "][state][':'].Line().Indent(1)
                           ["switch(chara)"].Line()
@@ -326,30 +294,30 @@ namespace StaticStateMachine
                     for (var offset = 0; offset < span.Length;)
                     {
                         var (pattern, associated) = span[offset];
-                        if (pattern.Length <= depth)
+                        var patternLength = GetLength(pattern);
+                        if (patternLength <= depth)
                         {
                             offset++;
                             continue;
                         }
-                        var chara = pattern[depth];
                         var count = 0;
                         var ignored = 0;
                         while (offset + ignored + count < span.Length)
                         {
                             var (p, _) = span[offset + ignored + count];
-                            if (p.Length <= depth)
+                            if (GetLength(p) <= depth)
                             {
                                 ignored++;
                                 continue;
                             }
-                            if (comparer.Compare(chara, p[depth]) != 0) break;
+                            if (Compare(pattern, p, depth) != 0) break;
                             count++;
                         }
-                        var match = pattern.Length - 1 == depth;
+                        var match = patternLength - 1 == depth;
                         var terminal = count == 1 && match;
                         if (!terminal) branch++;
                         var nextState = branch + freeState;
-                        writer["case "][GetLiteral(chara)][":"].Line().Indent(1)
+                        writer["case "][GetLiteral(pattern, depth)][":"].Line().Indent(1)
                               ["this._state = "][terminal ? -1 : nextState][';'].Line()
                               ["this.State = new ("][terminal ? "true" : "false"].End();
                         if (match)
@@ -369,41 +337,137 @@ namespace StaticStateMachine
 
                     return branch + freeState;
 
-                    static string GetLiteral(object obj)
-                    {
-                        if (obj is TypedConstant constant) return GetConstantLiteral(constant);
-                        if (obj is char chara) return Escaped(chara);
-                        return string.Empty;
+                }
+            }
 
-                        static string Escaped(char chara) => chara switch
-                        {
-                            '\'' => @"'\''",
-                            '\"' => @"'\""'",
-                            '\\' => @"'\\'",
-                            '\0' => @"'\0'",
-                            '\a' => @"'\a'",
-                            '\b' => @"'\b'",
-                            '\f' => @"'\f'",
-                            '\n' => @"'\n'",
-                            '\r' => @"'\r'",
-                            '\t' => @"'\t'",
-                            '\v' => @"'\v'",
-                            _ => $"'{chara}'",
-                        };
-                    }
-                    static string GetConstantLiteral(TypedConstant constant)
+            static int SequenceCompare(object left, object right)
+            {
+                switch (left, right)
+                {
+                    case (string l, string r):
+                        return string.CompareOrdinal(l, r);
+                    case (string l, ImmutableArray<TypedConstant> r):
+                        return +CompareStrArray(l, r);
+                    case (ImmutableArray<TypedConstant> l, string r):
+                        return -CompareStrArray(r, l);
+                    case (ImmutableArray<TypedConstant> l, ImmutableArray<TypedConstant> r):
                     {
-                        switch (constant.Kind)
+                        var min = Math.Min(l.Length, r.Length);
+                        for (var i = 0; i < min; ++i)
                         {
-                            case TypedConstantKind.Enum:
-                                var prefix = constant.Type?.ToDisplayString(FormatGlobalFullName);
-                                var str = constant.ToCSharpString();
-                                var idx = str.LastIndexOf('.');
-                                return prefix + str.Substring(idx);
-                            default:
-                                return constant.ToCSharpString();
+                            var comparison = CompareConstant(l[i], r[i]);
+                            if (comparison != 0) return comparison;
                         }
+                        return 0;
                     }
+                    default: return 0;
+                }
+
+                static int CompareStrArray(string l, ImmutableArray<TypedConstant> r)
+                {
+                    var min = Math.Min(l.Length, r.Length);
+                    for (var i = 0; i < min; ++i)
+                    {
+                        var comparison = CompareCharConstant(l[i], r[i]);
+                        if (comparison != 0) return comparison;
+                    }
+                    return 0;
+                }
+            }
+            static int Compare(object left, object right, int index)
+            {
+                return (left, right) switch
+                {
+                    (string l, string r) => l[index].CompareTo(r[index]),
+                    (string l, ImmutableArray<TypedConstant> r) => +CompareCharConstant(l[index], r[index]),
+                    (ImmutableArray<TypedConstant> l, string r) => -CompareCharConstant(r[index], l[index]),
+                    (ImmutableArray<TypedConstant> l, ImmutableArray<TypedConstant> r) => CompareConstant(l[index], r[index]),
+                    _ => 0,
+                };
+            }
+            static int CompareCharConstant(char left, TypedConstant right)
+            {
+                if (right.Value is char c) return left.CompareTo(c);
+                return CompareType(typeof(char), right.Value?.GetType());
+            }
+            static int CompareConstant(TypedConstant left, TypedConstant right)
+            {
+                return (left.Value, right.Value) switch
+                {
+                    (Type l, Type r) => CompareType(l, r),
+                    (string l, string r) => string.CompareOrdinal(l, r),
+                    (bool l, bool r) => l.CompareTo(r),
+                    (byte l, byte r) => l.CompareTo(r),
+                    (char l, char r) => l.CompareTo(r),
+                    (double l, double r) => l.CompareTo(r),
+                    (float l, float r) => l.CompareTo(r),
+                    (int l, int r) => l.CompareTo(r),
+                    (long l, long r) => l.CompareTo(r),
+                    (sbyte l, sbyte r) => l.CompareTo(r),
+                    (short l, short r) => l.CompareTo(r),
+                    (uint l, uint r) => l.CompareTo(r),
+                    (ulong l, ulong r) => l.CompareTo(r),
+                    (ushort l, ushort r) => l.CompareTo(r),
+                    (var l, var r) => CompareType(l?.GetType(), r?.GetType()),
+                };
+            }
+            static int CompareType(Type? left, Type? right)
+            {
+                return (left, right) switch
+                {
+                    (null, null) => 0,
+                    ({ }, null) => 1,
+                    (null, { }) => -1,
+                    ({ } l, { } r) => string.CompareOrdinal(l.FullName, r.FullName),
+                };
+            }
+
+            static int GetLength(object obj)
+            {
+                return obj switch
+                {
+                    ImmutableArray<TypedConstant> array => array.Length,
+                    string str => str.Length,
+                    _ => -1,
+                };
+            }
+            static string GetLiteral(object obj, int index)
+            {
+                return obj switch
+                {
+                    ImmutableArray<TypedConstant> array => GetConstantLiteral(array[index]),
+                    string str => Escaped(str[index]),
+                    _ => string.Empty,
+                };
+
+                static string Escaped(char chara) => chara switch
+                {
+                    '\'' => @"'\''",
+                    '\"' => @"'\""'",
+                    '\\' => @"'\\'",
+                    '\0' => @"'\0'",
+                    '\a' => @"'\a'",
+                    '\b' => @"'\b'",
+                    '\f' => @"'\f'",
+                    '\n' => @"'\n'",
+                    '\r' => @"'\r'",
+                    '\t' => @"'\t'",
+                    '\v' => @"'\v'",
+                    _ => $"'{chara}'",
+                };
+            }
+
+            static string GetConstantLiteral(TypedConstant constant)
+            {
+                switch (constant.Kind)
+                {
+                    case TypedConstantKind.Enum:
+                        var prefix = constant.Type?.ToDisplayString(FormatGlobalFullName);
+                        var str = constant.ToCSharpString();
+                        var idx = str.LastIndexOf('.');
+                        return prefix + str.Substring(idx);
+                    default:
+                        return constant.ToCSharpString();
                 }
             }
         }
