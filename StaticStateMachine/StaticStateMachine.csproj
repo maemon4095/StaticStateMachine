@@ -36,7 +36,7 @@
 	<!-- nuget -->
 	<PropertyGroup>
 		<Authors>maemon4095</Authors>
-		<Version>0.1.5</Version>
+		<Version>0.1.6</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

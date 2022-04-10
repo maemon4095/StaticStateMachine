@@ -71,8 +71,7 @@ namespace StaticStateMachine.Generator
     [global::System.AttributeUsage(global::System.AttributeTargets.Class | global::System.AttributeTargets.Struct)]
     class StaticStateMachineAttribute : global::System.Attribute
     {
-        public StaticStateMachineAttribute() : this(null, null)
-        { }
+        public StaticStateMachineAttribute() : this(null, null) { }
         public StaticStateMachineAttribute(Type argument, Type associated)
         {
             this.ArgumentType = argument;
@@ -196,7 +195,8 @@ namespace StaticStateMachine
 
         writer["public void Reset()"].Line()
               ['{'].Line().Indent(1)
-              ["this._state = 0;"].Line().Indent(-1)
+              ["this._state = 0;"].Line()
+              ["this.State = new(false);"].Line().Indent(-1)
               ['}'].Line();
 
         GenerateTransition(writer, context);
