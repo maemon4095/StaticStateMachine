@@ -1,4 +1,4 @@
-﻿using StaticStateMachine.Generator;
+﻿using StaticStateMachine.Attributes;
 using StaticStateMachine;
 using System.Text;
 
@@ -43,6 +43,16 @@ partial struct A
 {
 
 }
+
+[StaticStateMachine]
+[Association(new[] { 0L }, 0)]
+[Association(new[] { 1L, 2L }, 1)]
+[Association(new[] { 0, 1 }, 2)]
+partial struct B
+{
+
+}
+
 
 enum Option
 {
