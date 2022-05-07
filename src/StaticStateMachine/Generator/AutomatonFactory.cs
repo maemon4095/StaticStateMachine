@@ -44,7 +44,7 @@ internal static class AutomatonFactory
         {
             if (pattern.Length <= 0)
             {
-                automaton.Associate(automaton.InitialState, associated);
+                automaton.InitialStateAssociated = associated;
                 return;
             }
             var state = automaton.InitialState;

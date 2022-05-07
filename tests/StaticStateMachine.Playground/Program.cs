@@ -60,13 +60,6 @@ partial struct C
 
 }
 
-
-enum Option
-{
-    Import, ImportStatic, Output
-}
-
-
 namespace Test
 {
     partial struct Containing

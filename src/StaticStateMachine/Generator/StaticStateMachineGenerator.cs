@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 using System.Text;
 namespace StaticStateMachine.Generator;
 
@@ -138,7 +137,7 @@ namespace {Name.Namespace}
         {
             var ((symbol, stateMachineAttribute, associationAttributes), compilation) = tuple;
             var objectSymbol = compilation.GetSpecialType(SpecialType.System_Object);
-            var associations = associationAttributes.Select(data =>
+            var associations = associationAttributes.Where(data => data.ConstructorArguments.Length == 2).Select(data =>
             {
                 var args = data.ConstructorArguments;
                 return (Pattern: args[0], Associated: args[1]);
@@ -167,8 +166,7 @@ namespace {Name.Namespace}
         }
         catch (Exception ex)
         {
-            
-            throw new Exception($"{ex.GetType()} was thrown in product source. Message : {ex.Message}, StackTrace : {ex.StackTrace.Replace('\n', ' ').Replace("\r", "")}", ex);
+            context.ReportDiagnostic(Diagnostics.From(ex));
         }
     }
 
@@ -202,20 +200,26 @@ namespace {Name.Namespace}
 
         if (category != StateMachineCategory.TypeWise && argType is null)
         {
+            var charSymbol = compilation.GetSpecialType(SpecialType.System_Char);
+            var stringSymbol = compilation.GetSpecialType(SpecialType.System_String);
             argType = LowestCommonAncestorOf(
                         associations.Select(a =>
                         {
                             var pattern = a.Pattern;
-                            return pattern.Kind switch
+
+                            switch(pattern.Kind)
                             {
-                                TypedConstantKind.Array => (pattern.Type as IArrayTypeSymbol)?.ElementType,
-                                TypedConstantKind.Primitive => compilation.GetSpecialType(SpecialType.System_Char),
-                                _ => null,
-                            };
+                                case TypedConstantKind.Array:
+                                    return (pattern.Type as IArrayTypeSymbol)?.ElementType ?? throw InvalidAssociationException.NotSupportedPatternType(Location.None, pattern.Type);
+                                case TypedConstantKind.Primitive:
+                                    if (DefaultEquals(pattern.Type, stringSymbol)) return charSymbol;
+                                    throw InvalidAssociationException.NotSupportedPatternType(Location.None, pattern.Type);
+                                default:
+                                    throw InvalidAssociationException.NotSupportedPatternType(Location.None, pattern.Type);
+                            }
                         })
                       ) ?? objectSymbol;
         }
-
 
         associatedType ??= LowestCommonAncestorOf(associations.Select(pair => pair.Associated.Type)) ?? objectSymbol;
 

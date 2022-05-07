@@ -53,7 +53,7 @@ partial class StaticStateMachineGenerator
               ['{'].Line().Indent(1)
               ["this."][context.InternalStateVariable][" = "][automaton.InitialState][';'].Line()
               ["this."][context.StateVariable][" = new "][context.StateType]['('][automaton.IsTerminal(automaton.InitialState) ? "true" : "false"].End();
-        var associated = automaton.GetAssociated(automaton.InitialState);
+        var associated = automaton.InitialStateAssociated;
         if (associated is not null)
         {
             writer[", "][associated].End();

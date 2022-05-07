@@ -28,6 +28,7 @@ class Automaton
     int freeState;
 
     public int InitialState { get; }
+    public string? InitialStateAssociated { get; set; }
 
     public int AddState()
     {
@@ -35,7 +36,7 @@ class Automaton
         if (free < 0) free = Expand(ref this.entries);
         ref var entry = ref this.entries[free];
         this.freeState = entry.Next;
-        entry = (-1, null, new());
+        entry = (-1,  new());
         return free;
     }
     public void RemoveState(int state)
@@ -51,11 +52,6 @@ class Automaton
         var dst = this.entries[state].Connections.TryGetValue(chara, out var tuple) ? tuple.Dst : -1;
         this.Connect(state, chara, dst, associated);
     }
-    public void Associate(int state, string? associated)
-    {
-        this.entries[state].Associated = associated;
-    }
-    public string? GetAssociated(int state) => this.entries[state].Associated;
     public string? GetAssociated(int state, Arg chara)
     {
         if (this.entries[state].Connections.TryGetValue(chara, out var pair)) return pair.Associated;
@@ -101,20 +97,13 @@ class Automaton
         {
             var entries = this.entries;
             var connections = entries[initial].Connections;
-            yield return (initial, connections.Select(selector));
+            yield return (initial, connections.Select(pair => (pair.Key, pair.Value.Dst, pair.Value.Associated)));
             foreach (var pair in connections)
             {
                 var dst = pair.Value.Dst;
                 if (dst < 0) continue;
                 foreach (var tuple in core(dst))
                     yield return tuple;
-            }
-
-            (Arg, int, string?) selector(KeyValuePair<Arg, (int, string?)> connection)
-            {
-                var (dst, argAssociated) = connection.Value;
-                var associated = (dst >= 0 && argAssociated is null) ? entries[dst].Associated : argAssociated;
-                return (connection.Key, dst, associated);
             }
         }
     }
@@ -123,9 +112,9 @@ class Automaton
         return this.EnumerateConnections().SelectMany(pair => pair.Connections.Select(c => (pair.State, c.Arg, c.Dst, c.Associated)));
     }
 
-    record struct StateEntry(int Next, string? Associated, Dictionary<Arg, (int Dst, string? Associated)> Connections)
+    record struct StateEntry(int Next, Dictionary<Arg, (int Dst, string? Associated)> Connections)
     {
-        public static implicit operator StateEntry((int Next, string? Associated, Dictionary<Arg, (int Dst, string? Associated)> Connections) tuple) => new(tuple.Next, tuple.Associated, tuple.Connections);
+        public static implicit operator StateEntry((int Next, Dictionary<Arg, (int Dst, string? Associated)> Connections) tuple) => new(tuple.Next, tuple.Connections);
     }
 
     public readonly struct Arg : IEquatable<Arg>
