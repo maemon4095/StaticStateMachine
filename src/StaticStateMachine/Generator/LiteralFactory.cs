@@ -7,6 +7,7 @@ internal static class LiteralFactory
 {
     public static string From(TypedConstant constant)
     {
+        if (constant.IsNull) return "null";
         var str = constant.ToCSharpString();
         switch (constant.Kind)
         {

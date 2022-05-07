@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Running;
-using StaticStateMachine.Attributes;
 using StaticStateMachine;
 using BenchmarkDotNet.Attributes;
 

@@ -5,27 +5,31 @@ namespace StaticStateMachine.Generator;
 
 internal static class AutomatonFactory
 {
-    public static Automaton Create(StateMachineCategory category, ImmutableArray<(TypedConstant Pattern, TypedConstant Associated)> associations)
+    public static Automaton Create(Compilation compilation, StateMachineCategory category, ImmutableArray<(TypedConstant Pattern, TypedConstant Associated)> associations)
     {
+        var objectSymbol = compilation.GetSpecialType(SpecialType.System_Object);
+        var charSymbol = compilation.GetSpecialType(SpecialType.System_Char);
+
         switch (category)
         {
-            case StateMachineCategory.PlainText:
+            case StateMachineCategory.TypeWise:
+            case StateMachineCategory.Plain:
             {
                 var a = associations.Select(a => (
                     a.Pattern.Kind switch
                     {
-                        TypedConstantKind.Array => a.Pattern.Values.Select(LiteralFactory.From).ToImmutableArray(),
-                        _ => (a.Pattern.Value as string)?.Select(c => LiteralFactory.From(c)).ToImmutableArray() ?? ImmutableArray<string>.Empty,
+                        TypedConstantKind.Array => a.Pattern.Values.Select(c => new Automaton.Arg(c.Type ?? objectSymbol, LiteralFactory.From(c))).ToImmutableArray(),
+                        _ => (a.Pattern.Value as string)?.Select(c => new Automaton.Arg(charSymbol, LiteralFactory.From(c))).ToImmutableArray() ?? ImmutableArray<Automaton.Arg>.Empty,
                     },
-                    LiteralFactory.From(a.Associated)
-                ));
-                return CreatePlainText(a);
+                    LiteralFactory.From(a.Associated))
+                );
+                return CreatePlainOrTypeWise(a);
             }
             default: throw new NotSupportedException($"state machine category({category}) is not supported");
         }
     }
 
-    public static Automaton CreatePlainText(IEnumerable<(ImmutableArray<string> Pattern, string Associated)> associations)
+    public static Automaton CreatePlainOrTypeWise(IEnumerable<(ImmutableArray<Automaton.Arg> Pattern, string Associated)> associations)
     {
         var automaton = new Automaton();
 
@@ -36,9 +40,13 @@ internal static class AutomatonFactory
 
         return automaton;
 
-        static void Add(Automaton automaton, ImmutableArray<string> pattern, string associated)
+        static void Add(Automaton automaton, ImmutableArray<Automaton.Arg> pattern, string associated)
         {
-            if (pattern.Length == 0) return;
+            if (pattern.Length <= 0)
+            {
+                automaton.Associate(automaton.InitialState, associated);
+                return;
+            }
             var state = automaton.InitialState;
             var index = 0;
             var body = pattern.AsSpan()[..^1];

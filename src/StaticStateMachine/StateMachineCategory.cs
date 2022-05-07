@@ -2,5 +2,5 @@
 
 enum StateMachineCategory
 {
-    PlainText,
+    Plain, TypeWise
 }
