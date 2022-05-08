@@ -18,12 +18,12 @@ public partial class StaticStateMachineGenerator : IIncrementalGenerator
         {
             token.ThrowIfCancellationRequested();
             return compilation.GetTypeByMetadataName(Name.StateMachineAttributeFull) ?? throw new NullReferenceException($"{Name.StateMachineAttributeFull} was not found.");
-        });
+        }).WithComparer(SymbolEqualityComparer.Default);
         var associationAttributeSymbolProvider = context.CompilationProvider.Select((compilation, token) =>
         {
             token.ThrowIfCancellationRequested();
             return compilation.GetTypeByMetadataName(Name.AssociationAttributeFull) ?? throw new NullReferenceException($"{Name.AssociationAttributeFull} was not found");
-        });
+        }).WithComparer(SymbolEqualityComparer.Default);
 
         var valuesProvider = context.SyntaxProvider.CreateSyntaxProvider((syntax, token) =>
         {
@@ -35,17 +35,18 @@ public partial class StaticStateMachineGenerator : IIncrementalGenerator
             var syntax = (context.Node as TypeDeclarationSyntax)!;
             return context.SemanticModel.GetDeclaredSymbol(syntax);
         })
+        .WithComparer(SymbolEqualityComparer.Default)
         .Where(symbol => symbol is not null)
         .Combine(stateMachineAttributeSymbolProvider)
         .Combine(associationAttributeSymbolProvider)
         .Select((tuple, token) =>
         {
-            var ((syntax, stateMachineAttribute), associationAttribute) = tuple;
-            var attributes = syntax!.GetAttributes();
+            var ((symbol, stateMachineAttribute), associationAttribute) = tuple;
+            var attributes = symbol!.GetAttributes();
             var stateMachineAttributeData = attributes.SingleOrDefault(a => DefaultEquals(a.AttributeClass, stateMachineAttribute));
             var associationAttributeData = attributes.Where(a => DefaultEquals(a.AttributeClass, associationAttribute));
 
-            return (syntax, stateMachineAttributeData, associationAttributeData);
+            return (symbol, stateMachineAttributeData, associationAttributeData);
         })
         .Where((tuple) => tuple.stateMachineAttributeData is not null)
         .Combine(context.CompilationProvider);
@@ -59,7 +60,7 @@ namespace {Name.Namespace}
 {{
     enum {Name.StateMachineCategory}
     {{
-        {string.Join(",\n", Enum.GetNames(typeof(StateMachineCategory)))}
+        {string.Join(", ", Enum.GetNames(typeof(StateMachineCategory)))}
     }}
 
     public interface IStateMachine<TArg, TAssociated>
@@ -118,7 +119,7 @@ namespace {Name.Namespace}
         public global::{Name.StateMachineCategoryFull} Category {{ get; }}
     }}
 
-    [AttributeUsage(global::System.AttributeTargets.Class | global::System.AttributeTargets.Struct, AllowMultiple = true)]
+    [global::System.AttributeUsage(global::System.AttributeTargets.Class | global::System.AttributeTargets.Struct, AllowMultiple = true)]
     class {Name.AssociationAttribute} : global::System.Attribute
     {{
         public {Name.AssociationAttribute}(object pattern, object associated)
@@ -207,7 +208,7 @@ namespace {Name.Namespace}
                         {
                             var pattern = a.Pattern;
 
-                            switch(pattern.Kind)
+                            switch (pattern.Kind)
                             {
                                 case TypedConstantKind.Array:
                                     return (pattern.Type as IArrayTypeSymbol)?.ElementType ?? throw InvalidAssociationException.NotSupportedPatternType(Location.None, pattern.Type);
