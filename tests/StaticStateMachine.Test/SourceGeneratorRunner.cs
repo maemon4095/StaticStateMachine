@@ -44,7 +44,7 @@ readonly partial struct SourceGeneratorRunner
             ISourceGenerator g => CSharpGeneratorDriver.Create(g),
             _ => throw new InvalidOperationException()
         };
-        if (syntaxTree.GetDiagnostics().Verify()) throw new ArgumentException("Source has syntax error", nameof(source));
+        if (!syntaxTree.GetDiagnostics().Verify()) throw new ArgumentException("Source has syntax error", nameof(source));
         var result = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _).GetRunResult();
         return new RunnerResult(config, syntaxTree, outputCompilation, result.Results.First());
     }
