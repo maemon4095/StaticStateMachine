@@ -10,7 +10,7 @@ public class StateMachineTest
     public StateMachineTest(ITestOutputHelper helper)
     {
         this.helper = helper;
-        this.runner = SourceGeneratorRunner.Create<StaticStateMachineGenerator>();
+        this.runner = SourceGeneratorRunner.Create(new StaticStateMachineGenerator());
     }
 
     readonly ITestOutputHelper helper;
