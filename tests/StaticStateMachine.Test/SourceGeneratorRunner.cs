@@ -19,6 +19,8 @@ readonly partial struct SourceGeneratorRunner
         return new(config, new T());
 
     }
+    public static SourceGeneratorRunner Create<T>() where T : IIncrementalGenerator, new() => Create<T>(Config.Default);
+
 
     private SourceGeneratorRunner(Config config, IIncrementalGenerator generator)
     {
@@ -47,6 +49,3 @@ readonly partial struct SourceGeneratorRunner
         }
     }
 }
-
-
-delegate void GeneratorValidator(SourceGeneratorRunner.Result result);

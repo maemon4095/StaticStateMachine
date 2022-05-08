@@ -53,7 +53,7 @@ readonly partial struct SourceGeneratorRunner
             return exceptDriver.Concat(this.DriverResult.Diagnostics);
         }
 
-        public void Validate(GeneratorValidator validator)
+        public void Validate(Action<Result> validator)
         {
             validator(this);
         }

@@ -1,23 +1,16 @@
-using System.Collections.Immutable;
-using Xunit;
-
 using StaticStateMachine.Generator;
-using Xunit.Abstractions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq;
+using Xunit;
 
 namespace StaticStateMachine.Test;
 
 public class StateMachineTest
 {
-    public StateMachineTest(ITestOutputHelper helper)
+    public StateMachineTest()
     {
-        this.helper = helper;
-        this.runner = SourceGeneratorRunner.Create<StaticStateMachineGenerator>(SourceGeneratorRunner.Config.Default);
+        this.runner = SourceGeneratorRunner.Create<StaticStateMachineGenerator>();
     }
 
     readonly SourceGeneratorRunner runner;
-    readonly ITestOutputHelper helper;
 
     [Fact]
     public void EmptyAssociation()
@@ -30,16 +23,9 @@ partial struct A
 }";
         this.runner.Run(source).Validate(result =>
         {
-            if (result.Succeeded)
-            {
-
-            }
-            else
-            {
-                this.helper.WriteLine(string.Join("\n\n", result.Compilation.GetDiagnostics().Select(d => d.GetMessage())));
-                this.helper.WriteLine(result.Exception?.Message);
-            }
             Assert.True(result.Succeeded);
+
+            result.DriverResult.GeneratedTrees.Length.Is(1);
         });
     }
 }
