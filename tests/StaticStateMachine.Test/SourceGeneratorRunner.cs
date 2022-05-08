@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
-using System.Collections.Immutable;
 using System.Linq;
 
 namespace StaticStateMachine.Test;
@@ -31,21 +30,14 @@ readonly partial struct SourceGeneratorRunner
     readonly Config config;
     readonly IIncrementalGenerator generator;
 
-    public Result Run(string source)
+    public RunnerResult Run(string source)
     {
         var config = this.config;
         var syntaxTree = CSharpSyntaxTree.ParseText(source, config.ParseOptions);
         var compilation = CSharpCompilation.Create(config.AssemblyName, new[] { syntaxTree }, config.References, config.CompilationOptions);
         var driver = CSharpGeneratorDriver.Create(this.generator);
         if (syntaxTree.GetDiagnostics().Any(d => d.Severity == DiagnosticSeverity.Error)) throw new ArgumentException("Source has syntax error", nameof(source));
-        try
-        {
-            var result = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics).GetRunResult();
-            return new Result(config, syntaxTree, outputCompilation, diagnostics, result);
-        }
-        catch (Exception ex)
-        {
-            return new Result(config, syntaxTree, compilation, ImmutableArray.Create<Diagnostic>(), ex);
-        }
+        var result = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _).GetRunResult();
+        return new RunnerResult(config, syntaxTree, outputCompilation, result.Results.First());
     }
 }
