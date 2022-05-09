@@ -2,6 +2,8 @@ using StaticStateMachine.Generator;
 using Xunit;
 using Xunit.Abstractions;
 using System.Linq;
+using SourceGeneratorRunner;
+using SourceGeneratorRunner.Testing;
 
 namespace StaticStateMachine.Test;
 
@@ -10,11 +12,11 @@ public class StateMachineTest
     public StateMachineTest(ITestOutputHelper helper)
     {
         this.helper = helper;
-        this.runner = SourceGeneratorRunner.Create(() => new StaticStateMachineGenerator());
+        this.runner = GeneratorRunner.Create(() => new StaticStateMachineGenerator());
     }
 
     readonly ITestOutputHelper helper;
-    readonly SourceGeneratorRunner runner;
+    readonly GeneratorRunner runner;
 
     [Fact]
     public void EmptyAssociation()
@@ -28,7 +30,7 @@ partial struct A
         this.runner.Run(source).Verify(result =>
         {
             var helper = this.helper;
-            helper.WriteLine(string.Join("\n\n",result.GeneratorResult.GeneratedSources.Select(source => source.SourceText.ToString())));
+            helper.WriteLine(string.Join("\n\n",result.GeneratedSources.Select(source => source.SourceText.ToString())));
             Assert.True(result.Succeeded);
         });
     }
