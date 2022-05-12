@@ -44,7 +44,7 @@
 	<!-- nuget -->
 	<PropertyGroup>
 		<Authors>maemon4095</Authors>
-		<Version>0.2.0</Version>
+		<Version>0.3.0</Version>
 		<Description>Generator of static state machine</Description>
 		<Copyright>© maemon4095 2022</Copyright>
 		<PackageTags>sourcegenerator</PackageTags>
