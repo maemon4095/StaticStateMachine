@@ -1,4 +1,4 @@
-﻿using IncrementalSourceGeneratorSupplement;
+﻿using SourceGeneratorSupplement;
 using Microsoft.CodeAnalysis;
 namespace StaticStateMachine.Generator;
 
@@ -6,60 +6,39 @@ partial class StaticStateMachineGenerator
 {
     static void WriteDeclaration(IndentedWriter writer, GenerationContext context)
     {
-        if (context.ContainingNamespace is not null)
+        writer.DeclarationScope(context.Symbol.ContainingSymbol, (writer, symbol) =>
         {
-            writer["namespace "][context.ContainingNamespace].Line()
-                  ['{'].Line().Indent(1);
-        }
-        foreach (var containing in Containings(context.Symbol))
-        {
-            writer["partial "][containing.ToDisplayString(Format.TypeDecl)].Line()
-                  ['{'].Line().Indent(1);
-        }
+            writer["partial "][context.Symbol.ToDisplayString(Format.TypeDecl)].End();
+            if (context.InheritedInterfaces is not null)
+            {
+                writer[" : "][context.InheritedInterfaces].End();
+            }
 
-        writer["partial "][context.Symbol.ToDisplayString(Format.TypeDecl)].End();
-        if (context.InheritedInterfaces is not null)
-        {
-            writer[" : "][context.InheritedInterfaces].End();
-        }
+            writer.Line().BlockScope(1, writer =>
+            {
+                writer["private int "][context.InternalStateVariable][';'].Line()
+                      ["public "][context.StateType][' '][context.StateVariable][" { get; private set; }"].Line();
 
-        writer.Line()
-              ['{'].Line().Indent(1);
-
-        writer["private int "][context.InternalStateVariable][';'].Line()
-              ["public "][context.StateType][' '][context.StateVariable][" { get; private set; }"].Line();
-
-
-        WriteReset(writer, context);
-        WriteTransition(writer, context);
-
-        writer.Indent(-1)['}'].Line();
-
-        foreach (var _ in Containings(context.Symbol))
-        {
-            writer.Indent(-1)['}'].Line();
-        }
-
-        if (context.ContainingNamespace is not null)
-        {
-            writer.Indent(-1)['}'].Line();
-        }
+                WriteReset(writer, context);
+                WriteTransition(writer, context);
+            });
+        });
     }
     static void WriteReset(IndentedWriter writer, GenerationContext context)
     {
         var automaton = context.Automaton;
-
         writer["public void Reset()"].Line()
-              ['{'].Line().Indent(1)
-              ["this."][context.InternalStateVariable][" = "][automaton.InitialState][';'].Line()
-              ["this."][context.StateVariable][" = new "][context.StateType]['('][automaton.IsTerminal(automaton.InitialState) ? "true" : "false"].End();
-        var associated = automaton.InitialStateAssociated;
-        if (associated is not null)
-        {
-            writer[", "][associated].End();
-        }
-        writer[");"].Line().Indent(-1)
-              ['}'].Line();
+              .BlockScope(1, writer =>
+              {
+                  writer["this."][context.InternalStateVariable][" = "][automaton.InitialState][';'].Line()
+                        ["this."][context.StateVariable][" = new "][context.StateType]['('][automaton.IsTerminal(automaton.InitialState) ? "true" : "false"].End();
+                  var associated = automaton.InitialStateAssociated;
+                  if (associated is not null)
+                  {
+                      writer[", "][associated].End();
+                  }
+                  writer[");"].Line();
+              });
     }
     static void WriteTransition(IndentedWriter writer, GenerationContext context)
     {

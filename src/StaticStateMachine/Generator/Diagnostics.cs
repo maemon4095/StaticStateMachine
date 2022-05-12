@@ -7,8 +7,8 @@ using Microsoft.CodeAnalysis;
 namespace StaticStateMachine.Generator;
 internal static class Diagnostics
 {
-    public static DiagnosticDescriptor GenerationErrorDescriptor { get; } = new (
-        id:"SSM000", 
+    public static DiagnosticDescriptor GenerationErrorDescriptor { get; } = new(
+        id: "SSM000",
         title: "Static State Machine Generation Error",
         messageFormat: "{0} occured static state machine generation. Message : {1}",
         category: "Generation Error",

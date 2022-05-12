@@ -1,4 +1,4 @@
-﻿using IncrementalSourceGeneratorSupplement;
+﻿using SourceGeneratorSupplement;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -224,8 +224,6 @@ namespace {Name.Namespace}
 
         associatedType ??= LowestCommonAncestorOf(associations.Select(pair => pair.Associated.Type)) ?? objectSymbol;
 
-        validate(compilation, argType, associatedType, category);
-
         return (argType, associatedType, category);
 
         static StateMachineCategory getCategory(TypedConstant constant)
@@ -233,20 +231,6 @@ namespace {Name.Namespace}
             var obj = constant.Value is null ? null : Enum.ToObject(typeof(StateMachineCategory), constant.Value);
             if (obj is null) return StateMachineCategory.Plain;
             return obj as StateMachineCategory? ?? StateMachineCategory.Plain;
-        }
-        static void validate(Compilation compilation, ITypeSymbol? argType, ITypeSymbol associatedType, StateMachineCategory category)
-        {
-            switch (category)
-            {
-                case StateMachineCategory.Plain: return;
-                case StateMachineCategory.TypeWise: return;
-#if false
-                case StateMachineCategory.Regex:
-                    var charSymbol = compilation.GetSpecialType(SpecialType.System_Char);
-                    if (SymbolEqualityComparer.Default.Equals(argType, charSymbol)) return;
-                    throw new ArgumentException("regex state machine supports only string argument");
-#endif
-            }
         }
     }
 }

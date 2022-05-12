@@ -1,11 +1,5 @@
-﻿using IncrementalSourceGeneratorSupplement;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
+﻿using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
-using System.Text;
 namespace StaticStateMachine.Generator;
 public partial class StaticStateMachineGenerator
 {
